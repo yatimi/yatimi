@@ -1,0 +1,27 @@
+name: Refresh profile widgets
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/render_widgets.py
+      - .github/workflows/profile-widgets.yml
+permissions:
+  contents: write
+concurrency:
+  group: profile-widgets
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Render and publish public GitHub widgets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/render_widgets.py --publish
