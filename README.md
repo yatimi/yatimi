@@ -25,18 +25,18 @@
 | **Data & real-time** | GraphQL · REST · WebSockets · Matrix · Core Data · SwiftData · Realm |
 | **Quality & delivery** | XCTest · UI Testing · Fastlane · Firebase · Sentry |
 
-### 02 / GitHub, visualized
+### 02 / Currently building
 
-<a href="https://github.com/yatimi?tab=overview">
+<a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">
   <picture>
     <source media="(max-width: 600px) and (prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light-mobile.svg" />
     <source media="(max-width: 600px)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark-mobile.svg" />
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light.svg" />
-    <img src="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark.svg" width="100%" alt="Public GitHub dashboard: year-to-date commits, pull requests and active days, public projects, a 12-week activity graph, a 90-day contribution calendar and language distribution." />
+    <img src="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark.svg" width="100%" alt="Public project activity over the last 30 days: commits, merged and opened pull requests, three recently merged changes and a daily activity calendar. Open for details and PR links." />
   </picture>
 </a>
 
-<sub>Public GitHub activity · <a href="https://github.com/yatimi/yatimi/actions/workflows/profile-widgets.yml">Updated daily</a> · Language distribution excludes forks and this profile repository. Commercial experience is outlined below.</sub>
+<sub>Last 30 days · Public project activity · <a href="https://github.com/yatimi/yatimi/actions/workflows/profile-widgets.yml">Updated daily</a> · Excludes profile maintenance. Commercial experience is outlined below. <a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">Recent changes ↗</a></sub>
 
 ### 03 / Featured open source
 

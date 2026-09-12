@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Render GitHub-native SVG widgets from public data. Python standard library only."""
 import argparse
-import collections
 import datetime as dt
 import html
 import json
@@ -11,6 +10,7 @@ from pathlib import Path
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 
 USER = 'yatimi'
 REPO = 'yatimi/yatimi'
@@ -35,37 +35,73 @@ def api(path, payload=None, method=None):
             time.sleep(2 ** (attempt + 1))
 
 
+def search_prs(date_filter):
+    query = f'author:{USER} is:pr is:public -repo:{REPO} {date_filter}'
+    items = []
+    for page in range(1, 11):
+        result = api('search/issues?' + urllib.parse.urlencode({
+            'q': query, 'per_page': 100, 'page': page}))
+        if result.get('incomplete_results') or result['total_count'] > 1000:
+            raise RuntimeError('GitHub returned incomplete pull request search results.')
+        items.extend(result['items'])
+        if len(items) >= result['total_count']:
+            return items
+    raise RuntimeError('Could not collect all pull requests.')
+
+
 def collect():
-    # Run with the repository-scoped GITHUB_TOKEN, which cannot read private work repos.
     now = dt.datetime.now(dt.timezone.utc)
-    year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-    recent_start = (now - dt.timedelta(days=89)).replace(hour=0, minute=0, second=0, microsecond=0)
-    query = '''query($login:String!, $yearStart:DateTime!, $recentStart:DateTime!, $to:DateTime!){user(login:$login){
-      yearToDate:contributionsCollection(from:$yearStart,to:$to){
-        totalCommitContributions totalPullRequestContributions
-        contributionCalendar{weeks{contributionDays{date contributionCount weekday}}}}
-      recent:contributionsCollection(from:$recentStart,to:$to){
-        contributionCalendar{weeks{contributionDays{date contributionCount weekday}}}}
+    start = (now - dt.timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+    query = '''query($login:String!, $from:DateTime!, $to:DateTime!){user(login:$login){
+      contributionsCollection(from:$from,to:$to){
+        totalRepositoriesWithContributedCommits
+        commitContributionsByRepository(maxRepositories:100){
+          repository{nameWithOwner isPrivate}
+          contributions(first:100){pageInfo{hasNextPage} nodes{occurredAt commitCount}}}
+      }
     }}'''
     result = api('graphql', {'query': query, 'variables': {
-        'login': USER, 'yearStart': year_start.isoformat(),
-        'recentStart': recent_start.isoformat(), 'to': now.isoformat()}})
-    if result.get('errors'):
-        raise RuntimeError('GitHub GraphQL could not return the complete public contribution data.')
-    user = result['data']['user']
-    repos, page = [], 1
-    while True:
-        batch = api(f'users/{USER}/repos?type=owner&per_page=100&page={page}')
-        repos.extend(r for r in batch if not r['private'] and not r['fork'] and r['name'] != USER)
-        if len(batch) < 100:
-            break
-        page += 1
-    languages = collections.Counter()
-    for repo in repos:
-        languages.update(api(f'repos/{repo["full_name"]}/languages'))
-    return {'collected': now.date().isoformat(), 'projects': len(repos),
-            'languages': dict(languages), 'yearToDate': user['yearToDate'],
-            'recent': user['recent']}
+        'login': USER, 'from': start.isoformat(), 'to': now.isoformat()}})
+    if result.get('errors') or not result.get('data', {}).get('user'):
+        raise RuntimeError('GitHub could not return complete contribution data.')
+    cc = result['data']['user']['contributionsCollection']
+    if cc['totalRepositoriesWithContributedCommits'] > 100:
+        raise RuntimeError('Commit activity exceeds the repository collection limit.')
+    days = {(start.date()+dt.timedelta(days=i)).isoformat(): 0 for i in range(30)}
+    commits = 0
+    for group in cc['commitContributionsByRepository']:
+        repo = group['repository']
+        # Keep the same public scope even when rendering with a personal token.
+        # Profile maintenance must not inflate the activity of actual projects.
+        if repo['isPrivate'] or repo['nameWithOwner'].lower() == REPO.lower():
+            continue
+        if group['contributions']['pageInfo']['hasNextPage']:
+            raise RuntimeError('GitHub returned incomplete daily commit activity.')
+        for contribution in group['contributions']['nodes']:
+            date = contribution['occurredAt'][:10]
+            if date in days:
+                commits += contribution['commitCount']
+                days[date] += contribution['commitCount']
+    period = start.strftime('%Y-%m-%dT%H:%M:%SZ')+'..'+now.strftime('%Y-%m-%dT%H:%M:%SZ')
+    opened = search_prs('created:'+period)
+    merged = search_prs('is:merged merged:'+period)
+    for pr in opened:
+        date = pr['created_at'][:10]
+        if date in days:
+            days[date] += 1
+    shipped = []
+    for pr in merged:
+        merged_at = pr['pull_request'].get('merged_at')
+        if not merged_at:
+            raise RuntimeError('GitHub omitted a merged pull request date.')
+        shipped.append({'title': pr['title'], 'url': pr['html_url'],
+                        'repo': '/'.join(pr['html_url'].split('/')[3:5]),
+                        'number': pr['number'], 'mergedAt': merged_at})
+    shipped.sort(key=lambda pr: (pr['mergedAt'], pr['url']), reverse=True)
+    return {'collected': now.date().isoformat(), 'from': start.date().isoformat(),
+            'commits': commits, 'opened': len(opened), 'merged': len(merged),
+            'days': [{'date': date, 'count': count} for date, count in days.items()],
+            'shipped': shipped[:3]}
 
 
 class SVG:
@@ -96,118 +132,97 @@ def stat(s, x, y, w, value, label, accent):
     s.text(x+19, y+77, label, 12, s.c['muted'])
 
 
-def activity(s, x, y, w, h, days):
-    recent = days[-84:]
-    # Weekly bins, anchored to the final visible day. All values come from GitHub.
-    values = [sum(d['contributionCount'] for d in recent[i:i+7]) for i in range(0, len(recent), 7)]
-    s.rect(x, y, w, h, s.c['card'], 16, s.c['border'])
-    s.text(x+22, y+31, 'ACTIVITY / LAST 12 WEEKS', 12, s.c['muted'], 600)
-    s.text(x+22, y+65, f'{sum(values):,} contributions', 23, weight=650)
-    px, py, pw, ph = x+43, y+88, w-68, h-132
-    top = max(4, math.ceil(max(values, default=0)/4)*4)
-    for tick in range(3):
-        ty = py+ph*(1-tick/2)
-        s.line(px, ty, px+pw, ty, s.c['grid'])
-        s.text(px-10, ty+4, round(top*tick/2), 10, s.c['muted'], anchor='end')
-    pts = [(px+i*pw/max(1,len(values)-1), py+ph-v/top*ph) for i,v in enumerate(values)]
-    if pts:
-        path = 'M' + 'L'.join(f'{a:.1f} {b:.1f}' for a,b in pts)
-        s.path(path+f'L{pts[-1][0]:.1f} {py+ph}L{px} {py+ph}Z', 'url(#fill)')
-        s.path(path, stroke=s.c['mint'], width=2.5)
-        for a,b in pts:
-            s.circle(round(a,1),round(b,1),3,s.c['mint'])
-    if recent:
-        s.text(px, y+h-19, recent[0]['date'][5:], 11, s.c['muted'])
-        s.text(px+pw, y+h-19, recent[-1]['date'][5:], 11, s.c['muted'], anchor='end')
-
-
 def calendar(s, x, y, w, h, days):
     s.rect(x, y, w, h, s.c['card'], 16, s.c['border'])
-    s.text(x+22, y+31, 'CONSISTENCY / LAST 90 DAYS', 12, s.c['muted'], 600)
-    recent = days[-90:]
-    active = sum(d['contributionCount'] > 0 for d in recent)
-    s.text(x+22, y+55, f'{active} active days · brighter cells = more contributions', 11, s.c['muted'])
-    if not recent:
-        return
-    first = dt.date.fromisoformat(recent[0]['date'])
-    # GitHub calendars begin on Sunday; preserve weekday alignment at both edges.
+    s.text(x+20, y+29, 'LAST 30 DAYS', 12, s.c['muted'], 600)
+    s.text(x+20, y+49, 'Commits + PRs opened', 11, s.c['muted'])
+    first = dt.date.fromisoformat(days[0]['date'])
     offset = (first.weekday()+1) % 7
-    columns = math.ceil((offset+len(recent))/7)
-    cell, gap = 11, 3
-    step = cell+gap
-    grid_width = columns*step-gap
-    origin, top = x+(w-grid_width)/2+12, y+70
+    columns = math.ceil((offset+len(days))/7)
+    cell, step = 12, 16
+    origin, top = x+(w-(columns*step-4))/2+8, y+65
     for row, label in ((1, 'M'), (3, 'W'), (5, 'F')):
-        s.text(origin-12, top+row*step+9, label, 9, s.c['muted'], anchor='end')
-    maxcount = max((d['contributionCount'] for d in recent), default=0) or 1
-    for d in recent:
-        index = offset+(dt.date.fromisoformat(d['date'])-first).days
+        s.text(origin-10, top+row*step+10, label, 9, s.c['muted'], anchor='end')
+    maxcount = max(d['count'] for d in days) or 1
+    for day in days:
+        index = offset+(dt.date.fromisoformat(day['date'])-first).days
         cx, cy = origin+(index//7)*step, top+(index%7)*step
-        count = d['contributionCount']
-        s.parts.append(f'<g><title>{d["date"]}: {count} contributions</title>')
-        s.rect(cx, cy, cell, cell, s.c['grid'], 2)
+        count = day['count']
+        s.parts.append(f'<g><title>{day["date"]}: {count} commits and PRs opened</title>')
+        s.rect(cx, cy, cell, cell, s.c['grid'], 3)
         if count:
-            opacity = .35+.65*math.sqrt(count/maxcount)
-            s.parts.append(f'<g opacity="{opacity:.2f}">')
-            s.rect(cx, cy, cell, cell, s.c['mint'], 2)
+            s.parts.append(f'<g opacity="{.35+.65*math.sqrt(count/maxcount):.2f}">')
+            s.rect(cx, cy, cell, cell, s.c['mint'], 3)
             s.parts.append('</g>')
         s.parts.append('</g>')
-    s.text(x+22, y+h-18, recent[0]['date'], 10, s.c['muted'])
-    s.text(x+w-22, y+h-18, recent[-1]['date'], 10, s.c['muted'], anchor='end')
+    s.text(x+20, y+h-17, days[0]['date'][5:]+' — '+days[-1]['date'][5:], 10, s.c['muted'])
 
 
-def language(s,x,y,w,h,languages):
-    s.rect(x,y,w,h,s.c['card'],16,s.c['border'])
-    s.text(x+22,y+31,'LANGUAGES / PUBLIC CODE',12,s.c['muted'],600)
-    total=sum(languages.values())
-    items=sorted(languages.items(),key=lambda p:p[1],reverse=True)[:3]
-    if not total:
-        s.text(x+22,y+76,'No public language data yet',16)
+def compact(value, limit):
+    value = ' '.join(value.split())
+    return value if len(value) <= limit else value[:limit-1].rstrip()+'…'
+
+
+def shipped(s, x, y, w, h, items, mobile):
+    s.rect(x, y, w, h, s.c['card'], 16, s.c['border'])
+    s.text(x+20, y+29, 'RECENTLY SHIPPED', 12, s.c['muted'], 600)
+    s.text(x+w-20, y+29, 'Merged PRs', 11, s.c['muted'], anchor='end')
+    if not items:
+        s.text(x+20, y+88, 'No merged PRs in the last 30 days.', 15)
         return
-    colors=[s.c['orange'],s.c['purple'],s.c['mint']]
-    for i,(name,value) in enumerate(items):
-        yy=y+66+i*43
-        pct=value/total*100
-        s.text(x+22,yy,name,14,weight=600)
-        s.text(x+w-22,yy,f'{pct:.1f}%',13,s.c['muted'],anchor='end')
-        s.rect(x+22,yy+10,w-44,5,s.c['grid'],2.5)
-        s.rect(x+22,yy+10,(w-44)*pct/100,5,colors[i],2.5)
-    s.text(x+22,y+h-18,'By bytes · excludes forks and profile repo',10,s.c['muted'])
+    for i, pr in enumerate(items):
+        row = y+62+i*54
+        s.circle(x+24, row-4, 4, s.c['purple'])
+        s.text(x+38, row, compact(pr['title'], 43 if mobile else 62), 14, weight=600)
+        label = compact(pr['repo'], 33 if mobile else 52)+' · #'+str(pr['number'])
+        s.text(x+38, row+19, label, 11, s.c['muted'])
+        s.text(x+w-20, row+19, pr['mergedAt'][:10], 10, s.c['muted'], anchor='end')
+        if i < len(items)-1:
+            s.line(x+20, row+31, x+w-20, row+31, s.c['grid'])
 
 
-def dashboard(data,theme,mobile=False):
-    w,h=(500,1070) if mobile else (1000,755)
-    s=SVG(w,h,theme,'Public GitHub activity for Artem Zabihailo, updated '+data['collected'])
-    year = data['collected'][:4]
-    cc = data['yearToDate']
-    year_days = [d for week in cc['contributionCalendar']['weeks'] for d in week['contributionDays']
-                 if f'{year}-01-01' <= d['date'] <= data['collected']]
-    recent_start = (dt.date.fromisoformat(data['collected'])-dt.timedelta(days=89)).isoformat()
-    days = sorted((d for week in data['recent']['contributionCalendar']['weeks'] for d in week['contributionDays']
-                   if recent_start <= d['date'] <= data['collected']), key=lambda d: d['date'])
-    s.circle(29,31,4,s.c['mint'])
-    s.text(43,36,'OPEN-SOURCE ACTIVITY',13,s.c['muted'],600)
-    s.text(25,77,'The work, in numbers.',30,weight=650)
-    if not mobile:s.text(w-25,35,'UPDATED '+data['collected'],11,s.c['muted'],anchor='end')
-    metrics=[(cc['totalCommitContributions'],f'Commits / {year}',s.c['mint']),
-        (cc['totalPullRequestContributions'],f'PRs opened / {year}',s.c['purple']),
-        (sum(d['contributionCount'] > 0 for d in year_days),f'Active days / {year}',s.c['orange']),
-        (data['projects'],'Public projects',s.c['mint'])]
-    gap=12; cw=(w-50-gap*(1 if mobile else 3))/(2 if mobile else 4)
-    for i,(value,label,color) in enumerate(metrics):
-        col=i%2 if mobile else i; row=i//2 if mobile else 0
-        stat(s,25+col*(cw+gap),101+row*114,cw,value,label,color)
-    ay=343 if mobile else 223
-    activity(s,25,ay,w-50,260,days)
+def dashboard(data, theme, mobile=False):
+    w, h = (500, 710) if mobile else (1000, 490)
+    s = SVG(w, h, theme, 'Currently building: public project activity in the last 30 days, updated '+data['collected'])
+    s.circle(29, 30, 4, s.c['mint'])
+    s.text(43, 35, 'PUBLIC PROJECT ACTIVITY', 12, s.c['muted'], 600)
+    if not mobile:
+        s.text(w-25, 35, data['from']+' — '+data['collected'], 11, s.c['muted'], anchor='end')
+    s.text(25, 76, 'Currently building.', 30, weight=650)
+    metrics = [(data['commits'], 'Commits', s.c['mint']),
+               (data['merged'], 'PRs merged', s.c['purple']),
+               (data['opened'], 'PRs opened', s.c['orange'])]
+    cw = (w-74)/3
+    for i, (value, label, color) in enumerate(metrics):
+        stat(s, 25+i*(cw+12), 98, cw, value, label, color)
     if mobile:
-        calendar(s,25,619,450,204,days)
-        language(s,25,839,450,185,data['languages'])
-        s.text(25,1050,'Public data · updated '+data['collected'],11,s.c['muted'])
+        shipped(s, 25, 214, 450, 225, data['shipped'], True)
+        calendar(s, 25, 453, 450, 216, data['days'])
     else:
-        calendar(s,25,499,598,220,days)
-        language(s,637,499,338,220,data['languages'])
-        s.text(25,742,'Public GitHub data. Commercial work is described in the experience section.',10,s.c['muted'])
+        shipped(s, 25, 214, 650, 225, data['shipped'], False)
+        calendar(s, 689, 214, 286, 225, data['days'])
+    s.text(25, h-30, 'Last 30 days · public repos · excludes profile maintenance', 10, s.c['muted'])
+    s.text(25, h-14, 'Open activity details and PR links ↗', 11, s.c['mint'], 600)
     return s.finish()
+
+
+def activity_details(data):
+    text = ['# Recent project activity', '',
+            f"{data['from']} – {data['collected']} · public repositories · excludes profile maintenance.", '',
+            f"**{data['commits']} commits · {data['merged']} PRs merged · {data['opened']} PRs opened**", '',
+            '## Recently shipped', '']
+    for pr in data['shipped']:
+        # HTML escaping also prevents titles from introducing Markdown link syntax.
+        title = html.escape(' '.join(pr['title'].split()), quote=True)
+        url = html.escape(pr['url'], quote=True)
+        text.append(f'<p><a href="{url}"><strong>{title}</strong></a><br />'
+                    f'<sub>{html.escape(pr["repo"])} · #{pr["number"]} · merged {pr["mergedAt"][:10]}</sub></p>')
+    if not data['shipped']:
+        text.append('No merged PRs in the last 30 days.')
+    text.extend(['', 'Commits follow GitHub contribution rules. The calendar counts commits and PRs opened. '
+                 'Merged PRs include changes to the author’s own projects; merging does not necessarily mean a release.', '',
+                 '[Back to profile](https://github.com/'+USER+')', ''])
+    return '\n'.join(text)
 
 
 def publish(files):
@@ -247,6 +262,8 @@ def main():
         for mobile in (False,True):
             path=args.output/f'activity-{theme}{"-mobile" if mobile else ""}.svg'
             path.write_text(dashboard(data,theme,mobile)); files.append(path)
+    details = args.output/'recent.md'
+    details.write_text(activity_details(data)); files.append(details)
     if args.publish: publish(files)
     print('Rendered 4 theme-aware dashboard variants.')
 
