@@ -32,7 +32,7 @@
     <source media="(max-width: 600px) and (prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light-mobile.svg" />
     <source media="(max-width: 600px)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark-mobile.svg" />
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light.svg" />
-    <img src="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark.svg" width="100%" alt="Public GitHub dashboard: annual contributions, pull requests, original projects, followers, a 12-week activity graph, an isometric contribution landscape and language distribution." />
+    <img src="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark.svg" width="100%" alt="Public GitHub dashboard: year-to-date commits, pull requests and active days, public projects, a 12-week activity graph, a 90-day contribution calendar and language distribution." />
   </picture>
 </a>
 

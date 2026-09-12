@@ -37,12 +37,19 @@ def api(path, payload=None, method=None):
 
 def collect():
     # Run with the repository-scoped GITHUB_TOKEN, which cannot read private work repos.
-    query = '''query($login:String!){user(login:$login){followers{totalCount}
-      contributionsCollection{totalCommitContributions totalIssueContributions
-        totalPullRequestContributions totalPullRequestReviewContributions
-        contributionCalendar{totalContributions weeks{contributionDays{date contributionCount weekday}}}}
+    now = dt.datetime.now(dt.timezone.utc)
+    year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    recent_start = (now - dt.timedelta(days=89)).replace(hour=0, minute=0, second=0, microsecond=0)
+    query = '''query($login:String!, $yearStart:DateTime!, $recentStart:DateTime!, $to:DateTime!){user(login:$login){
+      yearToDate:contributionsCollection(from:$yearStart,to:$to){
+        totalCommitContributions totalPullRequestContributions
+        contributionCalendar{weeks{contributionDays{date contributionCount weekday}}}}
+      recent:contributionsCollection(from:$recentStart,to:$to){
+        contributionCalendar{weeks{contributionDays{date contributionCount weekday}}}}
     }}'''
-    result = api('graphql', {'query': query, 'variables': {'login': USER}})
+    result = api('graphql', {'query': query, 'variables': {
+        'login': USER, 'yearStart': year_start.isoformat(),
+        'recentStart': recent_start.isoformat(), 'to': now.isoformat()}})
     if result.get('errors'):
         raise RuntimeError('GitHub GraphQL could not return the complete public contribution data.')
     user = result['data']['user']
@@ -56,9 +63,9 @@ def collect():
     languages = collections.Counter()
     for repo in repos:
         languages.update(api(f'repos/{repo["full_name"]}/languages'))
-    return {'collected': dt.datetime.now(dt.timezone.utc).date().isoformat(),
-            'followers': user['followers']['totalCount'], 'projects': len(repos),
-            'languages': dict(languages), 'contributions': user['contributionsCollection']}
+    return {'collected': now.date().isoformat(), 'projects': len(repos),
+            'languages': dict(languages), 'yearToDate': user['yearToDate'],
+            'recent': user['recent']}
 
 
 class SVG:
@@ -114,31 +121,39 @@ def activity(s, x, y, w, h, days):
         s.text(px+pw, y+h-19, recent[-1]['date'][5:], 11, s.c['muted'], anchor='end')
 
 
-def skyline(s, x, y, w, h, days):
+def calendar(s, x, y, w, h, days):
     s.rect(x, y, w, h, s.c['card'], 16, s.c['border'])
-    s.text(x+22, y+31, 'CONTRIBUTION LANDSCAPE', 12, s.c['muted'], 600)
-    s.text(x+22, y+55, 'Last 52 weeks · column height = daily activity', 11, s.c['muted'])
-    recent=days[-364:]
-    # Small isometric columns: x-axis weeks, y-axis weekdays.
-    maxcount=max((d['contributionCount'] for d in recent), default=1) or 1
-    step=(w-78)/58
-    origin=x+24
-    baseline=y+109
-    for i,d in enumerate(recent):
-        week=i//7; weekday=i%7
-        cx=origin+(week+weekday*.65)*step
-        cy=baseline+weekday*step*.55+week*.65
-        count=d['contributionCount']
-        z=0 if not count else 4+count/maxcount*40
-        p=[(cx,cy-z),(cx+step*.84,cy+step*.25-z),(cx+step*.3,cy+step*.58-z),(cx-step*.54,cy+step*.33-z)]
-        color=s.c['grid'] if not count else s.c['purple']
-        if z:
-            s.path(f'M{p[1][0]:.1f} {p[1][1]:.1f}L{p[2][0]:.1f} {p[2][1]:.1f}L{p[2][0]:.1f} {p[2][1]+z:.1f}L{p[1][0]:.1f} {p[1][1]+z:.1f}Z',s.c['purple'])
-            s.path(f'M{p[2][0]:.1f} {p[2][1]:.1f}L{p[3][0]:.1f} {p[3][1]:.1f}L{p[3][0]:.1f} {p[3][1]+z:.1f}L{p[2][0]:.1f} {p[2][1]+z:.1f}Z',s.c['muted'])
+    s.text(x+22, y+31, 'CONSISTENCY / LAST 90 DAYS', 12, s.c['muted'], 600)
+    recent = days[-90:]
+    active = sum(d['contributionCount'] > 0 for d in recent)
+    s.text(x+22, y+55, f'{active} active days · brighter cells = more contributions', 11, s.c['muted'])
+    if not recent:
+        return
+    first = dt.date.fromisoformat(recent[0]['date'])
+    # GitHub calendars begin on Sunday; preserve weekday alignment at both edges.
+    offset = (first.weekday()+1) % 7
+    columns = math.ceil((offset+len(recent))/7)
+    cell, gap = 11, 3
+    step = cell+gap
+    grid_width = columns*step-gap
+    origin, top = x+(w-grid_width)/2+12, y+70
+    for row, label in ((1, 'M'), (3, 'W'), (5, 'F')):
+        s.text(origin-12, top+row*step+9, label, 9, s.c['muted'], anchor='end')
+    maxcount = max((d['contributionCount'] for d in recent), default=0) or 1
+    for d in recent:
+        index = offset+(dt.date.fromisoformat(d['date'])-first).days
+        cx, cy = origin+(index//7)*step, top+(index%7)*step
+        count = d['contributionCount']
         s.parts.append(f'<g><title>{d["date"]}: {count} contributions</title>')
-        s.path('M'+'L'.join(f'{a:.1f} {b:.1f}' for a,b in p)+'Z',color)
+        s.rect(cx, cy, cell, cell, s.c['grid'], 2)
+        if count:
+            opacity = .35+.65*math.sqrt(count/maxcount)
+            s.parts.append(f'<g opacity="{opacity:.2f}">')
+            s.rect(cx, cy, cell, cell, s.c['mint'], 2)
+            s.parts.append('</g>')
         s.parts.append('</g>')
-    s.text(x+22,y+h-18,'A day-by-day view of public work on GitHub.',11,s.c['muted'])
+    s.text(x+22, y+h-18, recent[0]['date'], 10, s.c['muted'])
+    s.text(x+w-22, y+h-18, recent[-1]['date'], 10, s.c['muted'], anchor='end')
 
 
 def language(s,x,y,w,h,languages):
@@ -163,16 +178,21 @@ def language(s,x,y,w,h,languages):
 def dashboard(data,theme,mobile=False):
     w,h=(500,1070) if mobile else (1000,755)
     s=SVG(w,h,theme,'Public GitHub activity for Artem Zabihailo, updated '+data['collected'])
-    cc=data['contributions']; cal=cc['contributionCalendar']
-    days=[d for week in cal['weeks'] for d in week['contributionDays']]
+    year = data['collected'][:4]
+    cc = data['yearToDate']
+    year_days = [d for week in cc['contributionCalendar']['weeks'] for d in week['contributionDays']
+                 if f'{year}-01-01' <= d['date'] <= data['collected']]
+    recent_start = (dt.date.fromisoformat(data['collected'])-dt.timedelta(days=89)).isoformat()
+    days = sorted((d for week in data['recent']['contributionCalendar']['weeks'] for d in week['contributionDays']
+                   if recent_start <= d['date'] <= data['collected']), key=lambda d: d['date'])
     s.circle(29,31,4,s.c['mint'])
     s.text(43,36,'OPEN-SOURCE ACTIVITY',13,s.c['muted'],600)
     s.text(25,77,'The work, in numbers.',30,weight=650)
     if not mobile:s.text(w-25,35,'UPDATED '+data['collected'],11,s.c['muted'],anchor='end')
-    metrics=[(cal['totalContributions'],'Contributions / past year',s.c['mint']),
-        (cc['totalPullRequestContributions'],'PRs opened / past year',s.c['purple']),
-        (data['projects'],'Original public projects',s.c['orange']),
-        (data['followers'],'GitHub followers',s.c['mint'])]
+    metrics=[(cc['totalCommitContributions'],f'Commits / {year}',s.c['mint']),
+        (cc['totalPullRequestContributions'],f'PRs opened / {year}',s.c['purple']),
+        (sum(d['contributionCount'] > 0 for d in year_days),f'Active days / {year}',s.c['orange']),
+        (data['projects'],'Public projects',s.c['mint'])]
     gap=12; cw=(w-50-gap*(1 if mobile else 3))/(2 if mobile else 4)
     for i,(value,label,color) in enumerate(metrics):
         col=i%2 if mobile else i; row=i//2 if mobile else 0
@@ -180,11 +200,11 @@ def dashboard(data,theme,mobile=False):
     ay=343 if mobile else 223
     activity(s,25,ay,w-50,260,days)
     if mobile:
-        skyline(s,25,619,450,204,days)
+        calendar(s,25,619,450,204,days)
         language(s,25,839,450,185,data['languages'])
         s.text(25,1050,'Public data · updated '+data['collected'],11,s.c['muted'])
     else:
-        skyline(s,25,499,598,220,days)
+        calendar(s,25,499,598,220,days)
         language(s,637,499,338,220,data['languages'])
         s.text(25,742,'Public GitHub data. Commercial work is described in the experience section.',10,s.c['muted'])
     return s.finish()
