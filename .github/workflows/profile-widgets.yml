@@ -1,13 +1,6 @@
 name: Refresh profile widgets
 on:
-  schedule:
-    - cron: '23 6 * * *'
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - scripts/render_widgets.py
-      - .github/workflows/profile-widgets.yml
 permissions:
   contents: write
 concurrency:

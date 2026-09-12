@@ -25,20 +25,7 @@
 | **Data & real-time** | GraphQL · REST · WebSockets · Matrix · Core Data · SwiftData · Realm |
 | **Quality & delivery** | XCTest · UI Testing · Fastlane · Firebase · Sentry |
 
-### 02 / Currently building
-
-<a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">
-  <picture>
-    <source media="(max-width: 600px) and (prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light-mobile.svg" />
-    <source media="(max-width: 600px)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark-mobile.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light.svg" />
-    <img src="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark.svg" width="100%" alt="Public project activity over the last 30 days: commits, merged and opened pull requests, three recently merged changes and a daily activity calendar. Open for details and PR links." />
-  </picture>
-</a>
-
-<sub>Last 30 days · Public project activity · <a href="https://github.com/yatimi/yatimi/actions/workflows/profile-widgets.yml">Updated daily</a> · Excludes profile maintenance. Commercial experience is outlined below. <a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">Recent changes ↗</a></sub>
-
-### 03 / Featured open source
+### 02 / Featured open source
 
 <a href="https://github.com/yatimi/ProtectedPasteboard">
   <picture>
@@ -53,7 +40,7 @@
 
 **[SwiftUI + TCA sample ↗](https://github.com/yatimi/boosters-test-ios)** — a small application exploring The Composable Architecture.
 
-### 04 / Production experience
+### 03 / Production experience
 
 **mova.io → OROMOON → BARVATECH LTD** · Shipping iOS apps since **2019**.
 
