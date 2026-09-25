@@ -11,7 +11,7 @@
   <a href="https://github.com/yatimi?tab=repositories"><b>Code ↗</b></a>
 </p>
 
-**Senior iOS Developer · 7+ years of production experience.** I build native apps across **fintech, crypto wallets, secure messaging, social, healthcare, and logistics** — with a focus on scalable architecture, security, and real-time performance.
+I build native iOS apps with **Swift, SwiftUI, and UIKit**. My focus: thoughtful interfaces, clear architecture, and privacy-conscious engineering.
 
 <p>
   <img src="https://img.shields.io/badge/Swift-F05138?style=flat-square&amp;logo=swift&amp;logoColor=white" alt="Swift" />
@@ -21,7 +21,7 @@
   <img src="https://img.shields.io/badge/Swift_Concurrency-148575?style=flat-square" alt="Swift Concurrency" />
 </p>
 
-### 01 / Engineering toolkit
+### Toolkit
 
 | Focus | Technologies & practices |
 | :--- | :--- |
@@ -31,7 +31,7 @@
 | **Data & real-time** | GraphQL · REST · WebSockets · Matrix · Core Data · SwiftData · Realm |
 | **Quality & delivery** | XCTest · UI Testing · Fastlane · Firebase · Sentry |
 
-### 02 / Featured open source
+### Selected projects
 
 <a href="https://github.com/yatimi/ProtectedPasteboard">
   <picture>
@@ -48,7 +48,7 @@
 
 **[pnl ↗](https://github.com/yatimi/pnl)** — a minimal pixel-style profit and loss journal. A side project in TypeScript.
 
-### 03 / Currently building
+### Currently building
 
 <a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">
   <picture>
@@ -61,10 +61,6 @@
 
 <sub>Refreshed daily · Public repositories only · Profile maintenance excluded · <a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">Activity details ↗</a></sub>
 
-### 04 / Production experience
-
-**mova.io → OROMOON → BARVATECH LTD** · Shipping iOS apps since **2019**.
-
 ---
 
-<p align="center"><b>Let's build something people can trust.</b><br /><sub>iOS · Fintech · Secure messaging</sub><br /><a href="https://www.linkedin.com/in/artem-zabihailo/">Connect on LinkedIn ↗</a></p>
+<p align="center"><a href="https://www.linkedin.com/in/artem-zabihailo/">Let’s connect ↗</a> &nbsp; · &nbsp; <a href="https://t.me/tommystork">Say hello on Telegram ↗</a></p>
