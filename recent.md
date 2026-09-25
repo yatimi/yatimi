@@ -1,14 +1,14 @@
 # Recent project activity
 
-2026-08-14 – 2026-09-12 · public repositories · excludes profile maintenance.
+2026-08-27 – 2026-09-25 · public repositories · excludes profile maintenance.
 
-**3 commits · 5 PRs merged · 5 PRs opened**
+**25 commits · 24 PRs merged · 24 PRs opened**
 
 ## Recently shipped
 
-<p><a href="https://github.com/yatimi/PixelWeather/pull/5"><strong>Add pixel design system</strong></a><br /><sub>yatimi/PixelWeather · #5 · merged 2026-09-12</sub></p>
-<p><a href="https://github.com/yatimi/PixelWeather/pull/4"><strong>Add weather models and fixtures</strong></a><br /><sub>yatimi/PixelWeather · #4 · merged 2026-09-12</sub></p>
-<p><a href="https://github.com/yatimi/PixelWeather/pull/3"><strong>Establish feature architecture</strong></a><br /><sub>yatimi/PixelWeather · #3 · merged 2026-09-12</sub></p>
+<p><a href="https://github.com/yatimi/pnl/pull/24"><strong>Release header icons and navigation spacing</strong></a><br /><sub>yatimi/pnl · #24 · merged 2026-09-21</sub></p>
+<p><a href="https://github.com/yatimi/pnl/pull/23"><strong>Align header actions and separate period controls</strong></a><br /><sub>yatimi/pnl · #23 · merged 2026-09-21</sub></p>
+<p><a href="https://github.com/yatimi/pnl/pull/22"><strong>Release journal UI improvements</strong></a><br /><sub>yatimi/pnl · #22 · merged 2026-09-21</sub></p>
 
 Commits follow GitHub contribution rules. The calendar counts commits and PRs opened. Merged PRs include changes to the author’s own projects; merging does not necessarily mean a release.
 
