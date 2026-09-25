@@ -13,7 +13,13 @@
 
 **Senior iOS Developer · 7+ years of production experience.** I build native apps across **fintech, crypto wallets, secure messaging, social, healthcare, and logistics** — with a focus on scalable architecture, security, and real-time performance.
 
-`Swift` `SwiftUI` `UIKit` `Combine` `Swift Concurrency`
+<p>
+  <img src="https://img.shields.io/badge/Swift-F05138?style=flat-square&amp;logo=swift&amp;logoColor=white" alt="Swift" />
+  <img src="https://img.shields.io/badge/SwiftUI-007AFF?style=flat-square&amp;logo=swift&amp;logoColor=white" alt="SwiftUI" />
+  <img src="https://img.shields.io/badge/UIKit-18253D?style=flat-square&amp;logo=apple&amp;logoColor=white" alt="UIKit" />
+  <img src="https://img.shields.io/badge/Combine-7752CC?style=flat-square" alt="Combine" />
+  <img src="https://img.shields.io/badge/Swift_Concurrency-148575?style=flat-square" alt="Swift Concurrency" />
+</p>
 
 ### 01 / Engineering toolkit
 
@@ -40,7 +46,22 @@
 
 **[SwiftUI + TCA sample ↗](https://github.com/yatimi/boosters-test-ios)** — a small application exploring The Composable Architecture.
 
-### 03 / Production experience
+**[pnl ↗](https://github.com/yatimi/pnl)** — a minimal pixel-style profit and loss journal. A side project in TypeScript.
+
+### 03 / Currently building
+
+<a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">
+  <picture>
+    <source media="(max-width: 600px) and (prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light-mobile.svg" />
+    <source media="(max-width: 600px)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark-mobile.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-light.svg" />
+    <img src="https://raw.githubusercontent.com/yatimi/yatimi/profile-widgets/activity-dark.svg" width="100%" alt="My last 30 days on GitHub: public project commits, pull requests, and recently merged work. Open activity details." />
+  </picture>
+</a>
+
+<sub>Refreshed daily · Public repositories only · Profile maintenance excluded · <a href="https://github.com/yatimi/yatimi/blob/profile-widgets/recent.md">Activity details ↗</a></sub>
+
+### 04 / Production experience
 
 **mova.io → OROMOON → BARVATECH LTD** · Shipping iOS apps since **2019**.
 

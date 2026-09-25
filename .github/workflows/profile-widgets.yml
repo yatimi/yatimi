@@ -1,6 +1,8 @@
 name: Refresh profile widgets
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * *'
 permissions:
   contents: write
 concurrency:
