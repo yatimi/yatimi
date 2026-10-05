@@ -1,14 +1,14 @@
 # Recent project activity
 
-2026-09-05 – 2026-10-04 · public repositories · excludes profile maintenance.
+2026-09-06 – 2026-10-05 · public repositories · excludes profile maintenance.
 
-**32 commits · 36 PRs merged · 37 PRs opened**
+**32 commits · 40 PRs merged · 42 PRs opened**
 
 ## Recently shipped
 
-<p><a href="https://github.com/yatimi/FinAI/pull/12"><strong>Separate finance persistence responsibilities</strong></a><br /><sub>yatimi/FinAI · #12 · merged 2026-10-04</sub></p>
-<p><a href="https://github.com/yatimi/FinAI/pull/11"><strong>Add local merchant and category rules</strong></a><br /><sub>yatimi/FinAI · #11 · merged 2026-10-03</sub></p>
-<p><a href="https://github.com/yatimi/FinAI/pull/10"><strong>Improve duplicate review during transaction import</strong></a><br /><sub>yatimi/FinAI · #10 · merged 2026-10-01</sub></p>
+<p><a href="https://github.com/yatimi/FinAI/pull/17"><strong>Fix empty analytics breakdown sections</strong></a><br /><sub>yatimi/FinAI · #17 · merged 2026-10-05</sub></p>
+<p><a href="https://github.com/yatimi/FinAI/pull/14"><strong>Prepare FinAI 0.2.0 release</strong></a><br /><sub>yatimi/FinAI · #14 · merged 2026-10-05</sub></p>
+<p><a href="https://github.com/yatimi/FinAI/pull/15"><strong>Organize project files by responsibility</strong></a><br /><sub>yatimi/FinAI · #15 · merged 2026-10-04</sub></p>
 
 Commits follow GitHub contribution rules. The calendar counts commits and PRs opened. Merged PRs include changes to the author’s own projects; merging does not necessarily mean a release.
 
