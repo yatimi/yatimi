@@ -1,8 +1,8 @@
 # Recent project activity
 
-2026-10-23 – 2026-11-21 · public repositories · excludes profile maintenance.
+2026-10-24 – 2026-11-22 · public repositories · excludes profile maintenance.
 
-**7 commits · 7 PRs merged · 8 PRs opened**
+**7 commits · 6 PRs merged · 6 PRs opened**
 
 ## Recently shipped
 
